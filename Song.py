@@ -8,19 +8,25 @@ from bs4 import BeautifulSoup
 
 class Song():
 
-    def __init__(self, artist, name):
+    def __init__(self, artist, name, id):
         self.artist = artist
         self.name = name
+        self.id = id
         self.lyrics = ''
         self.lyrics_map = {}
 
-    #gets and cleans lyrics from geinus
+    # gets and cleans lyrics from geinus
     def get_lyrics(self):
-        url = 'https://genius.com/' + '-'.join(self.artist.split()) + '-' +  '-'.join(self.name.split()) + '-lyrics'
-        print(url)
-        soup = BeautifulSoup(requests.get(url).text, 'lxml')
-        self.lyrics = soup.findAll('div', {'class' : 'lyrics'})[0].get_text()
-        self.get_lyrics_map()
+        try:
+            print(self.artist)
+            url = 'https://genius.com/' + '-'.join(self.artist.split()) + '-' +  '-'.join(self.name.split()) + '-lyrics'
+            soup = BeautifulSoup(requests.get(url).text, 'lxml')
+            self.lyrics = soup.findAll('div', {'class' : 'lyrics'})[0].get_text()
+            self.get_lyrics_map()
+        except:
+            print('could not get lyrics for song: ' + self.name + ' for artist' + str(self.artist))
+            print(url)
+            return False
         return self.lyrics
 
     def get_lyrics_map(self):
