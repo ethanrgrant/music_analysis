@@ -9,7 +9,6 @@ import spotipy.util as util
 
 from Artist import Artist
 from Song import Song
-
 #const vars
 RANGES = ['short_term', 'medium_term', 'long_term']
 PATH_TO_CREDS = 'creds.json'
@@ -20,6 +19,8 @@ def main():
     parser.add_argument('username', type=str, nargs='?', default='ethanrgrant')
     parser.add_argument('build_genre_graph', type=bool, nargs='?', default=False)
     args = parser.parse_args()
+
+
     client_id, client_secret = get_creds('spotify')
     token = util.prompt_for_user_token(args.username, scope='user-top-read', client_id=client_id, client_secret= client_secret, redirect_uri='http://localhost:8888/callback')
     sp = spotipy.client.Spotify(auth=token)
@@ -27,6 +28,9 @@ def main():
     if args.build_genre_graph:
         top_genres = get_important_genres(artists_map)
         output_genre_graph(top_genres)
+
+    #songs = get_top_songs(sp) not implemented yet
+
 
 
 #gets credentials from file
@@ -82,6 +86,9 @@ def output_genre_graph(all_genres, num_genres = 10):
     plt.xlabel('genre')
     plt.savefig('genre_bar_chart.png')
 
+#TODO get top songs and get lyrics
+def get_top_songs(sp):
+    return 'TODO'
 
 # method to get librosa data from MP3 unclear if will be usable
 def generate_song(path_to_song):
