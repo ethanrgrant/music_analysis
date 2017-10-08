@@ -1,9 +1,11 @@
 # Created by Ethan Grant
 import argparse
 import json
-import librosa
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
 import spotipy
 import spotipy.util as util
 
@@ -33,14 +35,26 @@ def main():
         exit(1)
 
     # gets top artists/genres
-    artists_map = get_top_artists(sp)
-    if args.build_genre_graph:
-        top_genres = get_important_genres(artists_map)
-        output_genre_graph(top_genres)
+   # artists_map = get_top_artists(sp)
+    #if args.build_genre_graph:
+    #    top_genres = get_important_genres(artists_map)
+    #    output_genre_graph(top_genres)
 
     # gets top songs
     songs = get_saved_songs(sp)
+    set_of_words = get_all_unique_words(songs)
+    word_df = build_total_word_table(songs, set_of_words)
+    song_data = get_data(word_df, songs)
 
+    #do_k_means(songs)
+
+
+# does PCA on words and appends other important song data
+def get_data(word_df, songs):
+    pca = PCA(n_components=10)
+    pca.fit(word_df)
+    components = pd.DataFrame(pca.transform(word_df))
+    #TODO append names to datafarme and add other song data
 
 # gets credentials from file
 def get_creds(service_name):
@@ -100,14 +114,18 @@ def output_genre_graph(all_genres, num_genres = 10):
     plt.xlabel('genre')
     plt.savefig('genre_bar_chart.png')
 
+
 # gets all saved songs and puts them into Song objects
 def get_saved_songs(sp):
     results = sp.current_user_saved_tracks()
     all_songs = []
     cur_songs = [r['track'] for r in results['items']]
-    while results['next']:
+    unique_words = set()
+    while results['next'] and len(all_songs)<20:
         for song in cur_songs:
             s = Song(song['artists'][0]['name'], song['name'], song['id'])
+            #s.do_analysis(sp.audio_analysis(song['id']))
+            s.get_lyrics()
             all_songs.append(s)
         results = sp.next(results)
         cur_songs = [r['track'] for r in results['items']]
@@ -115,11 +133,28 @@ def get_saved_songs(sp):
         all_songs.append(Song(song['artists'][0]['name'], song['name'],  song['id']))
     return all_songs
 
-# method to get librosa data from MP3 unclear if will be usable
-def generate_song(path_to_song):
-    y, sr = librosa.load(path_to_song)
-    s = Song(y, sr)
-    return s
+
+def get_all_unique_words(songs):
+    unique_words = set()
+    for s in songs:
+        unique_words.union(s.get_unique_words())
+    return unique_words
+
+def do_k_means(songs):
+    removed_names_songs = [s[1:] for s in songs]
+    model = KMeans(n_clusters=10)
+    labels = model.fit_predict(removed_names_songs)
+    for label, song in songs:
+        print('label ' + label + ' song info: ' + songs)
+
+
+def build_total_word_table(songs, set_of_words):
+    word_df = pd.DataFrame(pd.Series(dict.fromkeys(set_of_words, 0)))
+    for song in songs:
+        word_df[song.name] = pd.Series(song.lyrics_map)
+    word_df = word_df.fillna(0).transpose()
+    return word_df
+
 
 
 if __name__=='__main__':
